@@ -1,15 +1,22 @@
 import numpy as np
 from scipy.io import loadmat
+import time
 
 class kMeans:
-    def __init__(self, num_centers=10):
+    def __init__(self, threshold = 0.1, num_centers=10):
         self.num_centers = num_centers
 
     def train(self, train_data, train_labels):
         self.train_data = train_data
         self.train_labels = train_labels
         self.__initialize_centers()
-  
+        new_centers = self.__update_clusters()
+        while self.__is_outside_of_threshold(new_centers):  # update until change is small
+            print("updating", time.time())
+            self.centers = new_centers
+            new_centers = self.__update_clusters()
+
+    
     def __initialize_centers(self):
         """
         initialize 10 random data points to be 
@@ -27,17 +34,32 @@ class kMeans:
             closest_center = 0
             min_distance = np.linalg.norm(self.train_data[i] - self.centers[0], ord=2)
             for j in range(self.num_centers):
-                distance = np.linalg.norm(self.train_data[i]point - self.centers[j], ord=2)
+                distance = np.linalg.norm(self.train_data[i] - self.centers[j], ord=2)
                 if distance < min_distance:
                     min_distance = distance
                     closest_center = j
             clusters[closest_center].append(i)
         return np.array(clusters)  # convert to numpy array
     
+    def __get_centroid(self, cluster):
+        length, dim = cluster.shape
+        return np.array([np.sum(cluster[:, i])/length for i in range(dim)])
+
     def __update_clusters(self):
         clusters = self.__get_clusters()
+        new_centers = [0] * self.num_centers
         for i in range(self.num_centers):
-            self.centers[i] = np.mean(clusters[i], axis=0) # CHECK TO MAKE SURE THIS IS CORRECT
+            new_centers[i] = self.__get_centroid(clusters[i]) # TODO: CHECK TO MAKE SURE THIS IS CORRECT
+        return new_centers
+    
+    def __is_outside_of_threshold(self, new_centers):
+        # check that update change is greater than threshold
+        delta = np.subtract(np.array(new_centers), self.centers)
+        if np.average(delta) > self.threshold:
+            return True
+        return False
+
+
 
 if __name__ == "__main__":
     M = loadmat('MNIST_digit_data.mat')
