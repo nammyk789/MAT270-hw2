@@ -12,6 +12,9 @@ class kMeans:
             hyperparameters = Hyperparameters()
         self.threshold = hyperparameters.threshold
         self.num_centers = 10
+    
+    def vote(self, cluster):
+        return st.mode(self.labels[cluster])
 
     def accuracy(self):
         clusters = self.__get_clusters()
@@ -31,19 +34,19 @@ class kMeans:
         # while self.__is_outside_of_threshold(new_centroids):  # update until change is small
         #     self.centers = new_centroids
         #     new_centroids = self.__update_centroids()
-        for _ in range(100):
+        for _ in range(50):  # only 61%
             self.centers = self.__update_centroids()
-
-
-
     
     def __initialize_centroids(self):
         """
         initialize 10 random data points to be 
         the first 10 centers
         """
-        init_centers = np.random.randint(low=0, high=self.data.shape[0], size=self.num_centers)
-        self.centers = self.data[init_centers]
+        # creates random clusters
+        rand_clusters = np.random.randint(low=0, high=256, size=(self.num_centers, self.data.shape[1]))
+        self.centers = [0] * self.num_centers
+        for i in range(self.num_centers):
+            self.centers[i] = np.average(rand_clusters[i], axis=0)
     
     def __get_clusters(self):
         """
@@ -51,7 +54,7 @@ class kMeans:
         """
         clusters = []
         for _ in range(self.num_centers):
-            clusters.append([])
+            clusters.append([])  # initialize list of clusters
         for i in range(len(self.data)):
             closest_center = 0
             min_distance = np.linalg.norm(self.data[i] - self.centers[0], ord=2)
@@ -64,15 +67,11 @@ class kMeans:
         clusters = np.array([np.array(cluster) for cluster in clusters], dtype='object')  # convert to numpy array
         return clusters 
     
-    def __get_centroid(self, cluster):
-        centroid = np.average(self.data[cluster], axis=0) # column averages
-        return centroid
-
     def __update_centroids(self):
         clusters = self.__get_clusters()
         new_centers = [0] * self.num_centers
         for i in range(self.num_centers):
-            new_centers[i] = self.__get_centroid(clusters[i])
+            new_centers[i] = np.average(self.data[clusters[i]], axis=0)
         return np.array(new_centers)
     
     def __is_outside_of_threshold(self, new_centers):
