@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.io import loadmat
 from scipy import stats as st
+import sklearn.metrics
 
 class Hyperparameters:
     def __init__(self, threshold=0.001):
@@ -16,15 +17,25 @@ class kMeans:
     def vote(self, cluster):
         return st.mode(self.labels[cluster])
 
+    # def accuracy(self):
+    #     clusters = self.__get_clusters()
+    #     accuracy = 0
+    #     for cluster in clusters:
+    #         cluster_labels = self.labels[cluster]
+    #         # find what percent of the labels in the cluster are the vote
+    #         label_homogeneity = (cluster_labels == st.mode(cluster_labels)).sum() / len(cluster_labels)
+    #         accuracy += label_homogeneity / self.num_centers
+    #     return accuracy
+
     def accuracy(self):
         clusters = self.__get_clusters()
-        accuracy = 0
+        label_pred = [0] * len(self.labels)
         for cluster in clusters:
-            cluster_labels = self.labels[cluster]
-            # find what percent of the labels in the cluster are the vote
-            label_homogeneity = (cluster_labels == st.mode(cluster_labels)).sum() / len(cluster_labels)
-            accuracy += label_homogeneity / self.num_centers
-        return accuracy
+            cluster_vote = st.mode(self.labels[cluster])
+            for idx in cluster:
+                label_pred[idx] = cluster_vote
+        return sklearn.metrics.rand_score(self.labels, np.array(label_pred))
+
 
     def train(self, data, labels):
         self.data = data
@@ -42,11 +53,9 @@ class kMeans:
         initialize 10 random data points to be 
         the first 10 centers
         """
-        # creates random clusters
-        rand_clusters = np.random.randint(low=0, high=256, size=(self.num_centers, self.data.shape[1]))
-        self.centers = [0] * self.num_centers
-        for i in range(self.num_centers):
-            self.centers[i] = np.average(rand_clusters[i], axis=0)
+        init_centers = np.random.randint(low=0, high=self.data.shape[0], size=self.num_centers)
+        self.centers = self.data[init_centers]
+      
     
     def __get_clusters(self):
         """
@@ -71,7 +80,8 @@ class kMeans:
         clusters = self.__get_clusters()
         new_centers = [0] * self.num_centers
         for i in range(self.num_centers):
-            new_centers[i] = np.average(self.data[clusters[i]], axis=0)
+            cluster = self.data[clusters[i]]
+            new_centers[i] = np.average(cluster, axis=0)
         return np.array(new_centers)
     
     def __is_outside_of_threshold(self, new_centers):
