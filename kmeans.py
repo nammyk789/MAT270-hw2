@@ -3,38 +3,39 @@ from scipy.io import loadmat
 from scipy import stats as st
 import sklearn.metrics
 
-class Hyperparameters:
-    def __init__(self, threshold=0.001):
-        self.threshold = threshold
-
 class kMeans:
-    def __init__(self, hyperparameters=None):
-        if not hyperparameters:
-            hyperparameters = Hyperparameters()
-        self.threshold = hyperparameters.threshold
-        self.num_centers = 10
+    def __init__(self, k = 10, threshold=0.001):
+        self.threshold = threshold
+        self.num_centers = k
     
     def vote(self, cluster):
         return st.mode(self.labels[cluster])
+    
+    def get_cluster_labels(self):
+        clusters = self.__get_clusters()
+        labels = [0] * self.num_centers
+        for i in range(self.num_centers):
+            labels[i] = st.mode(self.labels[clusters[i]])[0][0][0]
+        print(labels) 
 
-    # def accuracy(self):
-    #     clusters = self.__get_clusters()
-    #     accuracy = 0
-    #     for cluster in clusters:
-    #         cluster_labels = self.labels[cluster]
-    #         # find what percent of the labels in the cluster are the vote
-    #         label_homogeneity = (cluster_labels == st.mode(cluster_labels)).sum() / len(cluster_labels)
-    #         accuracy += label_homogeneity / self.num_centers
-    #     return accuracy
-
-    def accuracy(self):
+    def rand_score(self):
         clusters = self.__get_clusters()
         label_pred = [0] * len(self.labels)
         for cluster in clusters:
-            cluster_vote = st.mode(self.labels[cluster])
+            cluster_vote = st.mode(self.labels[cluster])[0][0][0]
             for idx in cluster:
                 label_pred[idx] = cluster_vote
-        return sklearn.metrics.rand_score(self.labels, np.array(label_pred))
+        return sklearn.metrics.adjusted_rand_score(self.labels.flatten(), np.array(label_pred))
+
+    def accuracy(self):
+        clusters = self.__get_clusters()
+        accuracy = 0
+        for cluster in clusters:
+            cluster_labels = self.labels[cluster]
+            # find what percent of the labels in the cluster are the vote
+            label_homogeneity = (cluster_labels == st.mode(cluster_labels)).sum() / len(cluster_labels)
+            accuracy += label_homogeneity / self.num_centers
+        return accuracy
 
 
     def train(self, data, labels):
