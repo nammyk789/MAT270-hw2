@@ -1,11 +1,19 @@
 import numpy as np
 from scipy.io import loadmat
+from scipy.spatial.distance import pdist, squareform
 import kmeans
 
 class spectralClustering:
-    def __init__(self, sigma=5):
+    def __init__(self, sigma=5, neighbors=10):
         self.sigma = sigma
+        self.neighbors = neighbors
     
+    def cluster_counts(self):
+        cluster_counts = []
+        for cluster in self.model.get_clusters():
+            cluster_counts.append(len(cluster))
+        return cluster_counts
+
     def rand_score(self):
         return self.model.rand_score()
     
@@ -16,7 +24,7 @@ class spectralClustering:
         self.data = data
 
         # get weight and degree of data
-        self.__create_weight_matrix()
+        self.__create_knn_weight_matrix()
         self.degree = np.diag(self.weight.sum(axis=1))
         self.graph_Laplacian = self.degree - self.weight
 
@@ -31,8 +39,17 @@ class spectralClustering:
         self.model.train(vecs[:,1:10], labels)
 
 
+    def __create_knn_weight_matrix(self):
+        distances = squareform(pdist(self.data, 'sqeuclidean'))  # pairwise distances between all images
+        W = []
+        for row in distances:
+            nearest_images = np.argpartition(row, self.neighbors)
+            row[nearest_images[:self.neighbors]] = 1
+            row[nearest_images[self.neighbors:]] = 0
+            W.append(row)
+        self.weight = np.array(W)
 
-    def __create_weight_matrix(self):
+    def __create_gaussian_weight_matrix(self):
         """
         creates a weight matrix using gaussian kernel
         """
@@ -55,3 +72,4 @@ if __name__ == "__main__":
     model.cluster(images_train[:2000], labels_train[:2000])
     print("accuracy:", model.accuracy())
     print("rand score:", model.rand_score())
+    print("sizes of clusters:", model.cluster_counts())
