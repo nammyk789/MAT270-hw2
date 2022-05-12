@@ -5,6 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn import metrics
 
+
 if __name__ == "__main__":
     mat_contents = loadmat("genomedata.mat")
     raw_data = mat_contents["X"]
